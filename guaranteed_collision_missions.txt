@@ -1,0 +1,8 @@
+# Guaranteed Collision Mission File
+# Collision Point: (100.0, 100.0, 50.0), Collision Time Offset: 45.0s
+# Format: Name;StartOffsetSec;DurationSec;WP1_x,WP1_y,WP1_z;WP2_x,WP2_y,WP2_z;...
+CollisionDrone_1;40.0;10.0;65.12,64.88,42.93;100.0,100.0,50.0;84.8,143.37,69.7
+CollisionDrone_2;40.0;10.0;84.29,54.8,35.5;100.0,100.0,50.0;88.51,68.49,87.08
+CollisionDrone_3;40.0;10.0;137.33,68.06,40.73;100.0,100.0,50.0;139.1,82.68,24.1
+CollisionDrone_4;40.0;10.0;124.85,134.53,76.27;100.0,100.0,50.0;103.25,67.56,87.91
+CollisionDrone_5;40.0;10.0;70.06,73.5,80.02;100.0,100.0,50.0;107.81,62.44,82.07

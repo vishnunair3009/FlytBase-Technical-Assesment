@@ -1,3 +1,5 @@
+# HIGH PROBABILITY COLLISION GENERATION 
+
 import random
 import datetime
 import os

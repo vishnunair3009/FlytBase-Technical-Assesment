@@ -1,3 +1,5 @@
+# GUARENTEED COLLISIONS  
+
 import random
 import datetime
 import os

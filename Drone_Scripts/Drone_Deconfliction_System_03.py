@@ -1,4 +1,4 @@
-
+# DRONE DECONFLICTION SYSTEM 03 
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -12,13 +12,13 @@ import os # Import os for file handling
 
 class DroneMission:
     def __init__(self, waypoints, time_window, name="Drone", safety_buffer=2.0):
-        # Ensure waypoints are tuples of floats
+        # To make sure waypoints are tuples of floats
         self.waypoints = [tuple(float(c) for c in wp) for wp in waypoints]
         self.start_time, self.end_time = time_window
         self.name = name
         self.safety_buffer = safety_buffer
 
-        # Calculate spatial points along the path
+        # Calculating the spatial points along the path
         self.spatial_points = self._calculate_path_points()
         self.points = self.spatial_points # Backward compatibility for check_collisions
 
@@ -44,7 +44,7 @@ class DroneMission:
                 continue
 
             # Determine number of points based on segment distance for smoother paths
-            # Adjust this factor (e.g., 2.5) for desired path resolution
+            
             num_segment_points = max(2, int(distance * 2.5))
             # Generate points for the current segment, including endpoints
             current_segment_points = [tuple(start + t * (end - start)) for t in np.linspace(0, 1, num_segment_points, endpoint=True)]
@@ -55,7 +55,7 @@ class DroneMission:
             else:
                  points.extend(current_segment_points)
 
-        # Final pass to remove any lingering duplicates (e.g., from waypoints being very close)
+        # Final pass to remove any lingering duplicates 
         if points:
             seen = set()
             unique_ordered_points = []
@@ -69,22 +69,22 @@ class DroneMission:
                     seen.add(rounded_p)
             points = unique_ordered_points
 
-        # Ensure the very last waypoint is included if it's distinct from the last generated point
+        # the very last waypoint to be included if it's distinct from the last generated point
         if self.waypoints and points and not np.allclose(points[-1], self.waypoints[-1]):
              points.append(self.waypoints[-1])
-        elif self.waypoints and not points: # Handle case with only one waypoint
+        elif self.waypoints and not points: 
              points.append(self.waypoints[0])
 
         return points
 
 
     def _prepare_timed_path(self):
-        """Distributes spatial points over the mission time window."""
+        """Distributing spatial points over the mission time window."""
         self.duration_seconds = (self.end_time - self.start_time).total_seconds()
         self.timed_path = []
 
         if not self.spatial_points: return
-        if self.duration_seconds < 0: self.duration_seconds = 0 # Handle negative duration
+        if self.duration_seconds < 0: self.duration_seconds = 0 # for Handling negative duration
 
         if len(self.spatial_points) == 1:
             self.timed_path.append((self.start_time, self.spatial_points[0]))
@@ -98,7 +98,7 @@ class DroneMission:
             return
 
         # Distribute points evenly across the duration
-        # Time step is based on the number of *intervals* between points
+        # Time step is based on the number of intervals between points
         num_intervals = len(self.spatial_points) - 1
         time_step_seconds = self.duration_seconds / num_intervals
 
@@ -142,12 +142,12 @@ class DroneMission:
                 current_pos = pt1_pos + alpha * (pt2_pos - pt1_pos)
                 return tuple(current_pos)
 
-        # Should ideally not be reached if query_time_dt is within start/end and timed_path is correctly built
+        # test to see if query_time_dt is reached within start/end and timed_path if correctly built
         # As a fallback, return the last position if time is at or after the last point's time
         if query_time_dt >= self.timed_path[-1][0]:
              return self.timed_path[-1][1]
 
-        return None # Should not happen with correct logic
+        return None # Should not happen with correct logic, try with change in position if doesnt work
 
 
 def check_collisions(primary_drone, other_drones, safety_buffer=2.0, time_tolerance_seconds=1.0):
@@ -185,10 +185,9 @@ def check_collisions(primary_drone, other_drones, safety_buffer=2.0, time_tolera
         print("Warning: Cannot perform collision check due to invalid simulation time window.")
         return conflicts # No valid time window to check
 
-    # Use a small, fixed time step for checking, or base it on the min_time_step found
-    # A fixed small step ensures consistent checking resolution regardless of path density
-    # If no valid time steps were found (e.g., all drones stationary), use a default small step
-    # Using a slightly smaller default step for static check for better chance of catching overlaps
+    # Using a small, fixed time step for checking, or base it on the min_time_step found
+    # If no valid time steps were found (e.g., all drones stationary), use a default small step, that ensures 
+    # default step for static check for better chance of catching overlaps
     check_time_step = min_time_step if min_time_step is not None and min_time_step.total_seconds() > 0 else timedelta(seconds=0.05)
 
 
@@ -206,10 +205,10 @@ def check_collisions(primary_drone, other_drones, safety_buffer=2.0, time_tolera
                     other_np = np.array(other_pos, dtype=float)
                     distance = np.linalg.norm(primary_np - other_np)
 
-                    # Check for collision based on distance and time proximity (already at same time step)
+                    # Check for collision based on distance and time proximity 
                     if distance <= safety_buffer:
                         # Check if this conflict at this time for this pair has already been reported
-                        # This prevents reporting the same conflict multiple times for adjacent time steps
+                        # Trying to prevent reporting the same conflict multiple times for adjacent time steps, check error messages for conflict
                         already_reported = False
                         # Use a small time tolerance for checking if a conflict at this time has been reported
                         report_time_tolerance = timedelta(seconds=0.1) # Report conflicts within 0.1s of each other as the same
@@ -392,7 +391,7 @@ def animate_missions(primary_drone, other_drones, safety_buffer=2.0,
         'last_collision_check_time': sim_start_time # Track last time collision was checked
     }
     MIN_SIM_STEP = 0.01; MAX_SIM_STEP = 5.0 # Define min/max simulation step for speed control
-    COLLISION_CHECK_INTERVAL_SECONDS = 0.5 # How often to perform detailed collision check during animation
+    COLLISION_CHECK_INTERVAL_SECONDS = 0.5 # time btw collision checks in animation
 
     def update_speed_display():
         """Updates the text displaying the current simulation step."""
@@ -401,7 +400,7 @@ def animate_missions(primary_drone, other_drones, safety_buffer=2.0,
 
     update_speed_display() # Initial display of speed
 
-    # Define button callbacks BEFORE creating buttons
+    # Define button callbacks before creating buttons
     def toggle_pause_resume_cb(event):
         """Callback for the Pause/Resume button."""
         if ani_obj_storage[0] is None: return
@@ -412,7 +411,7 @@ def animate_missions(primary_drone, other_drones, safety_buffer=2.0,
         else:
             ani_obj_storage[0].resume()
             if 'pause' in button_refs: button_refs['pause'].label.set_text('Pause')
-        if fig.canvas: fig.canvas.draw_idle() # Redraw canvas to update button text
+        if fig.canvas: fig.canvas.draw_idle() # resetting canvas 
 
     def change_simulation_speed_cb(is_faster):
         """Callback for the Slower/Faster buttons."""
@@ -527,11 +526,7 @@ def animate_missions(primary_drone, other_drones, safety_buffer=2.0,
 
         t_end_update = time.perf_counter()
         update_duration_ms = (t_end_update - t_start_update) * 1000
-        # Optional: Print performance info periodically
-        # if frame_index % 30 == 0 :
-        #     display_interval_ms_val = max(1, int(1000.0 / display_fps_target))
-        #     print(f"Frame {frame_index}: SimTime: {current_dt.strftime('%H:%M:%S')}, SimStep: {animation_state['current_sim_step_seconds']:.2f}s, Update: {update_duration_ms:.2f}ms, Target Display Interval: {display_interval_ms_val}ms")
-
+        
 
         return artists_to_return # Return the updated artists
 
@@ -548,15 +543,15 @@ def animate_missions(primary_drone, other_drones, safety_buffer=2.0,
             print(f"Saving 3D animation to {movie_filename}...")
             # Set save_fps based on the initial simulation step for a realistic speed in the video
             save_fps = 1.0 / initial_sim_step_seconds
-            # Note: Saving can be slow for complex animations or high FPS
+            
             ani.save(movie_filename, writer='ffmpeg', fps=save_fps, dpi=150)
             print(f"3D Animation saved: {movie_filename}")
         except Exception as e:
             print(f"Error saving 3D animation: {e}. Ensure ffmpeg is installed/configured and in your system's PATH.")
             print("Attempting to display animation instead...")
-            plt.show() # Show plot if saving fails
+            plt.show() # plot to display if save fails 
     else:
-        plt.show() # Display animation
+        plt.show() 
 
     return ani
 
@@ -619,24 +614,24 @@ def read_missions_from_file(filepath, base_time):
     return missions
 
 
-# Example usage with reading missions from a file
+
 if __name__ == "__main__":
     # Define a common base time for all missions
     base_time = datetime(2025, 5, 1, 12, 0, 0)
 
-    # Define a safety buffer (e.g., 2.5 meters)
+    # Define a safety buffer -----> (taken as 2.5m , can change as per requirement)
     safety_margin = 2.5
 
-    # --- Generate a sample mission file if it doesn't exist ---
+    # --- Generating a sample mission file if it doesn't exist ---
     mission_file_path = "random_collision_missions.txt" #----> CHANGED THIS DIRECTORY random_missions.txt
-    # Removed the call to generate_mission_file from here.
-    # You should run generate_missions.py separately first.
+    
+    
     if not os.path.exists(mission_file_path):
         print(f"Error: Mission file '{mission_file_path}' not found.")
         print("Please run 'Mission_Generation.py' first to create the mission file.")
         exit() # Exit if the mission file is not found
 
-    # --- Read missions from the file ---
+    # --- Reading missions from the file ---
     print(f"--- Reading Missions from {mission_file_path} ---")
     all_missions = read_missions_from_file(mission_file_path, base_time)
 
