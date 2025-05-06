@@ -1,14 +1,19 @@
 import random
 import datetime
 import os
-import numpy as np # Import numpy for calculating midpoint
+import numpy as np # numpy needed for calculating midpoint
 
+# Generating a random waypoint 
 def generate_random_waypoint(x_range=(0, 100), y_range=(0, 100), altitude_range=(0, 50)):
     """Generates a random 3D waypoint within specified per-axis ranges."""
+# ranges specified for the x,y and z axis 
     x = random.uniform(x_range[0], x_range[1])
     y = random.uniform(y_range[0], y_range[1])
     z = random.uniform(altitude_range[0], altitude_range[1])
+
     return (round(x, 2), round(y, 2), round(z, 2))
+# Picking a random float along each axis , roudning to 2 decimal places 
+# and then returns a tuple.
 
 def format_mission_string(drone_name, base_time_offset_seconds, duration_seconds, waypoints):
     """Formats a drone mission string from a list of waypoints."""
