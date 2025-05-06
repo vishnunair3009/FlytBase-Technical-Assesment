@@ -633,7 +633,7 @@ if __name__ == "__main__":
     # You should run generate_missions.py separately first.
     if not os.path.exists(mission_file_path):
         print(f"Error: Mission file '{mission_file_path}' not found.")
-        print("Please run 'generate_missions.py' first to create the mission file.")
+        print("Please run 'Mission_Generation.py' first to create the mission file.")
         exit() # Exit if the mission file is not found
 
     # --- Read missions from the file ---
