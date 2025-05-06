@@ -10,7 +10,7 @@ A Python system for verifying drone waypoint missions in shared airspace by dete
 
    2) Deconfliction & Visualization: Second, run the main system to check for spatial and temporal conflicts and produce visual outputs.
 
-This seperation ensures modularity , making it easier to test with different scenarios and scale up for larger datasets.
+This seperation ensures modularity , making it easier to test with different scenarios and scale up for larger datasets, making it ideal for UTM type implementations. 
 
 # Installation Guide - How to Run ?
 
