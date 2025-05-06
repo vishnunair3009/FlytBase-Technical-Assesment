@@ -1,0 +1,137 @@
+import random
+import datetime
+import os
+import numpy as np
+
+def generate_random_waypoint(x_range=(0, 100), y_range=(0, 100), altitude_range=(0, 50)):
+    x = random.uniform(x_range[0], x_range[1])
+    y = random.uniform(y_range[0], y_range[1])
+    z = random.uniform(altitude_range[0], altitude_range[1])
+    return (round(x, 2), round(y, 2), round(z, 2))
+
+def generate_random_mission_string(drone_name, base_time_offset_seconds, duration_seconds, 
+                                   num_waypoints, base_coord_range=(0, 100), altitude_range=(0, 50),
+                                   waypoints_list_override=None):
+    if waypoints_list_override is not None:
+        waypoints = waypoints_list_override
+    else:
+        waypoints = [generate_random_waypoint(base_coord_range, base_coord_range, altitude_range) 
+                     for _ in range(num_waypoints)]
+    waypoints_str = ';'.join([f"{wp[0]},{wp[1]},{wp[2]}" for wp in waypoints])
+    return f"{drone_name};{base_time_offset_seconds};{duration_seconds};{waypoints_str}"
+
+def generate_mission_file(filename="missions.txt", num_drones=5, 
+                          base_time_obj=datetime.datetime(2025, 5, 1, 12, 0, 0),
+                          max_mission_duration_seconds=60, 
+                          coord_x_range=(0, 100), coord_y_range=(0, 100), altitude_range=(0, 50),
+                          min_waypoints_per_mission=2, max_waypoints_per_mission=5,
+                          num_converging_drones=0):
+    if num_converging_drones >= num_drones and num_drones > 0:
+        print(f"Warning: num_converging_drones ({num_converging_drones}) >= num_drones ({num_drones})."
+              f" Setting converging to {max(0,num_drones - 1)}.")
+        num_converging_drones = max(0, num_drones - 1)
+
+    print(f"Generating {num_drones} missions (including {num_converging_drones} converging) to {filename}...")
+    missions_data = []
+    primary_mission_details = {}
+
+    # 1. Generate Primary Drone
+    if num_drones > 0:
+        primary_name = "Alpha (Primary)"
+        primary_start_offset = 0 
+        primary_duration = random.randint(max_mission_duration_seconds // 2, max_mission_duration_seconds)
+        primary_waypoints_count = random.randint(min_waypoints_per_mission, max_waypoints_per_mission)
+        primary_waypoints_list = [generate_random_waypoint(coord_x_range, coord_y_range, altitude_range) 
+                                  for _ in range(primary_waypoints_count)]
+        primary_mission_str = generate_random_mission_string(
+            primary_name, primary_start_offset, primary_duration,
+            primary_waypoints_count, waypoints_list_override=primary_waypoints_list
+        )
+        missions_data.append(primary_mission_str)
+        primary_mission_details['waypoints'] = primary_waypoints_list
+        primary_mission_details['start_offset'] = primary_start_offset
+        primary_mission_details['duration'] = primary_duration
+        primary_mission_details['num_waypoints'] = primary_waypoints_count
+    else:
+        if os.path.exists(filename):
+            open(filename, 'w').close()
+        print("No drones requested. Empty mission file (or cleared existing).")
+        return
+
+    # 2. Generate Converging Drones
+    for i in range(num_converging_drones):
+        drone_name = f"ConvergeDrone_{i+1}"
+        if not primary_mission_details.get('waypoints') or primary_mission_details['num_waypoints'] < 1:
+            print(f"Warning: Primary drone details missing/invalid for {drone_name}. Generating as random.")
+            start_offset_fallback = random.randint(0, max_mission_duration_seconds // 2)
+            duration_fallback = random.randint(max_mission_duration_seconds // 3, max_mission_duration_seconds)
+            wp_count_fallback = random.randint(min_waypoints_per_mission, max_waypoints_per_mission)
+            missions_data.append(generate_random_mission_string(
+                drone_name, start_offset_fallback, duration_fallback, wp_count_fallback,
+                coord_x_range, coord_y_range, altitude_range))
+            continue
+
+        target_wp_index = min(primary_mission_details['num_waypoints'] - 1, primary_mission_details['num_waypoints'] // 2)
+        if primary_mission_details['num_waypoints'] == 1:
+            target_wp_index = 0
+        target_primary_wp = primary_mission_details['waypoints'][target_wp_index]
+        time_per_primary_segment = primary_mission_details['duration'] / max(1, primary_mission_details['num_waypoints'] - 1)
+        primary_time_at_target_wp_offset = primary_mission_details['start_offset'] + (target_wp_index * time_per_primary_segment)
+        conv_duration = random.randint(max(10, max_mission_duration_seconds // 4), max(30, int(max_mission_duration_seconds * 0.6)))
+        conv_start_offset = int(max(0, primary_time_at_target_wp_offset - conv_duration / 2))
+        conv_start_offset = random.randint(max(0, conv_start_offset - conv_duration // 4), conv_start_offset + conv_duration // 4)
+        conv_waypoints_count = random.randint(min_waypoints_per_mission, max_waypoints_per_mission)
+        conv_waypoints_list = []
+        convergence_radius_xy = (coord_x_range[1] - coord_x_range[0]) / 8
+        convergence_radius_z = (altitude_range[1] - altitude_range[0]) / 8
+        idx_for_target_in_conv_path = random.randint(0, conv_waypoints_count - 1)
+        for k in range(conv_waypoints_count):
+            if k == idx_for_target_in_conv_path:
+                conv_waypoints_list.append(target_primary_wp)
+            else:
+                wp_x = target_primary_wp[0] + random.uniform(-convergence_radius_xy, convergence_radius_xy)
+                wp_y = target_primary_wp[1] + random.uniform(-convergence_radius_xy, convergence_radius_xy)
+                wp_z = target_primary_wp[2] + random.uniform(-convergence_radius_z, convergence_radius_z)
+                wp_x = round(max(coord_x_range[0], min(coord_x_range[1], wp_x)), 2)
+                wp_y = round(max(coord_y_range[0], min(coord_y_range[1], wp_y)), 2)
+                wp_z = round(max(altitude_range[0], min(altitude_range[1], wp_z)), 2)
+                conv_waypoints_list.append((wp_x, wp_y, wp_z))
+        missions_data.append(generate_random_mission_string(
+            drone_name, conv_start_offset, conv_duration, 
+            conv_waypoints_count, waypoints_list_override=conv_waypoints_list
+        ))
+
+    # 3. Generate Remaining Random Drones
+    num_already_generated = 1 + num_converging_drones if num_drones > 0 else 0
+    num_random_to_generate = max(0, num_drones - num_already_generated)
+    for i in range(num_random_to_generate):
+        drone_name = f"RandomDrone_{i+1}"
+        start_offset = random.randint(0, max_mission_duration_seconds // 2) 
+        duration = random.randint(max_mission_duration_seconds // 3, max_mission_duration_seconds)
+        waypoints_count = random.randint(min_waypoints_per_mission, max_waypoints_per_mission)
+        missions_data.append(generate_random_mission_string(
+            drone_name, start_offset, duration, waypoints_count, 
+            coord_x_range, coord_y_range, altitude_range
+        ))
+
+    try:
+        with open(filename, "w") as f:
+            for mission_str in missions_data:
+                f.write(mission_str + "\n")
+        print(f"Successfully generated missions file: {filename} with {len(missions_data)} drone missions.")
+    except IOError as e:
+        print(f"Error writing mission file {filename}: {e}")
+
+if __name__ == "__main__":
+    generate_mission_file(
+        filename="random_collision_missions.txt", 
+        num_drones=10,
+        num_converging_drones=3,
+        base_time_obj=datetime.datetime(2025, 5, 3, 12, 0, 0),
+        max_mission_duration_seconds=120, 
+        coord_x_range=(0, 200), 
+        coord_y_range=(0, 200),
+        altitude_range=(0, 100),
+        min_waypoints_per_mission=3,
+        max_waypoints_per_mission=6
+    )
